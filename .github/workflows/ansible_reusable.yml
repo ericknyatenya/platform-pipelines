@@ -1,0 +1,26 @@
+name: Ansible Reusable
+on:
+  workflow_call:
+    inputs:
+      inventory:
+        required: true
+        type: string
+      playbook:
+        required: true
+        type: string
+jobs:
+  ansible:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+      - name: Lint
+        run: |
+          pipx install ansible-lint || pip install ansible-lint
+          ansible-lint
+      - name: Dry Run
+        run: |
+          ansible-playbook -i ${{ inputs.inventory }} ${{ inputs.playbook }} --check

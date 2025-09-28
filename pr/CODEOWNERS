@@ -1,0 +1,5 @@
+# Example CODEOWNERS — adjust handles to your reviewers
+/iac-live/dev/*    @platform-core @dev-leads
+/iac-live/qa/*     @platform-core @qa-leads
+/iac-live/prod/*   @sre-leads @security-team
+/config-ansible/*  @platform-core @app-owners

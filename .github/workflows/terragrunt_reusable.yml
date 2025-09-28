@@ -1,0 +1,36 @@
+name: Terragrunt Reusable
+on:
+  workflow_call:
+    inputs:
+      path-filter:
+        required: true
+        type: string
+jobs:
+  tg:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Terragrunt
+        run: |
+          TG_VERSION=$(curl -s https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest | grep tag_name | cut -d '"' -f4)
+          curl -L https://github.com/gruntwork-io/terragrunt/releases/download/${TG_VERSION}/terragrunt_linux_amd64 -o terragrunt
+          sudo install terragrunt /usr/local/bin/terragrunt
+      - name: Format & Lint
+        run: |
+          terragrunt -v
+          find . -name "*.hcl" -type f -print0 | xargs -0 -I{} terragrunt hclfmt {} || true
+      - name: Terragrunt Plan (changed dirs)
+        run: |
+          git fetch --depth=2 origin ${{ github.base_ref }}
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} | grep -E "${{ inputs.path-filter }}" | sed 's|/[^/]*$||' | sort -u)
+          echo "Changed dirs:"
+          echo "$CHANGED"
+          set -e
+          for d in $CHANGED; do
+            echo "::group::Plan in $d"
+            (cd "$d" && terragrunt init -upgrade && terragrunt plan -out=plan.out || true)
+            echo "::endgroup::"
+          done
